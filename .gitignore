@@ -1,0 +1,9 @@
+# Python virtual environment
+venv/
+# Python bytecode
+__pycache__/
+*.pyc
+# FastAPI logs
+logs/
+# MinIO data directory
+data/
