@@ -13,8 +13,10 @@ This setup simulates how **Amazon S3** works locally.
 ## 🚀 Features
 
 * Upload any file (`.txt`, `.json`, `.jpg`, etc.)
+* Upload with folder support (object key prefix)
 * List uploaded files
 * Download files using presigned URL
+* Delete files
 * Automatic bucket creation
 
 ---
@@ -63,7 +65,19 @@ Password: password
 
 **POST** `/upload`
 
-Upload any file.
+* Optional: `folder` parameter
+
+Example:
+
+```
+folder=user1
+```
+
+Stored as:
+
+```
+user1/file.txt
+```
 
 ---
 
@@ -73,7 +87,7 @@ Upload any file.
 
 ```json
 {
-  "files": ["test.txt"]
+  "files": ["test.txt", "user1/file.txt"]
 }
 ```
 
@@ -83,7 +97,25 @@ Upload any file.
 
 **GET** `/download/{filename}`
 
-Returns a **presigned URL** to download the file.
+Example:
+
+```
+/download/user1/file.txt
+```
+
+Returns a **presigned URL**.
+
+---
+
+### 4. Delete File
+
+**DELETE** `/delete/{filename}`
+
+Example:
+
+```
+/delete/user1/file.txt
+```
 
 ---
 
@@ -106,7 +138,8 @@ Bucket → Objects
 
 * S3-compatible APIs
 * Buckets & Objects
-* File upload/download flow
+* Object key (folder simulation)
+* Upload / download / delete flow
 * Presigned URLs
 * SDK interaction (boto3)
 
@@ -137,9 +170,20 @@ docker compose up --build
 ## 🎯 Notes
 
 * You can upload **any file type**
-* No real folders in S3 — only object keys
+* No real folders in S3 — only object keys (prefix-based)
 * Works exactly like AWS S3 (locally)
 
 ---
 
+## 🚀 Next Steps
+
+* Presigned upload URLs
+* Multipart upload (large files)
+* Authentication (JWT)
+* Metadata handling
+
+---
+
 This is a **beginner-friendly foundation** to understand how real-world storage systems like S3 work.
+
+---
