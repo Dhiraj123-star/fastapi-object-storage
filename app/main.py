@@ -20,19 +20,28 @@ def startup():
     if BUCKET not in names:
         s3.create_bucket(Bucket=BUCKET)
 
+# Upload with optional folder support
 @app.post("/upload")
-async def upload(file: UploadFile=File(...)):
-    s3.upload_fileobj(file.file,BUCKET,file.filename)
-    return {"file":file.filename}
+async def upload(file: UploadFile=File(...),folder:str=""):
 
+    # If folder provided -- add prefix
+    key= f"{folder}/{file.filename}" if folder else file.filename
+
+    s3.upload_fileobj(file.file,BUCKET,key)
+
+    return {"file":key}
+
+# List files 
 @app.get("/files")
 def files():
     objects= s3.list_objects_v2(Bucket=BUCKET)
     if "Contents" not in objects:
         return {"files":[]}
+    
     return {"files":[obj["Key"]for obj in objects["Contents"]]}
 
-@app.get("/download/{filename}")
+# Download 
+@app.get("/download/{filename:path}")
 def download(filename: str):
     url= s3.generate_presigned_url(
         "get_object",
@@ -40,3 +49,9 @@ def download(filename: str):
         ExpiresIn=3600,
     )
     return {"url":url}
+
+# Delete 
+@app.delete("/delete/{filename:path}")
+def delete_file(filename:str):
+    s3.delete_object(Bucket=BUCKET,Key=filename)
+    return {"message":f"{filename} deleted"}
