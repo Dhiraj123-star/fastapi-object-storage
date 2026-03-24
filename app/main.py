@@ -1,5 +1,8 @@
 from fastapi import FastAPI, UploadFile,File
 import boto3
+import uuid
+import os
+
 
 app =FastAPI()
 
@@ -22,14 +25,31 @@ def startup():
 
 # Upload with optional folder support
 @app.post("/upload")
-async def upload(file: UploadFile=File(...),folder:str=""):
+async def upload(file: UploadFile=File(...),user:str="default"):
 
-    # If folder provided -- add prefix
-    key= f"{folder}/{file.filename}" if folder else file.filename
+    # extract extension
+    ext = os.path.splitext(file.filename)[1]
 
-    s3.upload_fileobj(file.file,BUCKET,key)
+    # generate uuid filename
+    unique_name = f"{uuid.uuid4()}{ext}"
 
-    return {"file":key}
+    key = f"{user}/{unique_name}"
+
+    s3.upload_fileobj(
+        file.file,
+        BUCKET,
+        key,
+        ExtraArgs={
+            "Metadata":{
+                "original_filename":file.filename
+            }
+        }
+    )
+    return {
+        "stored_as":key,
+        "original_name":file.filename
+    }
+
 
 # Presigned Upload URL
 @app.get("/upload-url")
