@@ -13,7 +13,9 @@ This setup simulates how **Amazon S3** works locally.
 ## 🚀 Features
 
 * Upload any file (`.txt`, `.json`, `.jpg`, etc.)
-* Upload with folder support (object key prefix)
+* UUID-based file storage (no name conflicts)
+* User-based folder structure (prefix)
+* Store original filename as metadata
 * List uploaded files
 * Download files using presigned URL
 * Delete files
@@ -65,18 +67,27 @@ Password: password
 
 **POST** `/upload`
 
-* Optional: `folder` parameter
+* Optional: `user` parameter (default: `default`)
 
 Example:
 
 ```
-folder=user1
+/upload?user=dhiraj
 ```
 
-Stored as:
+👉 If you upload `resume.pdf`, it will be stored as:
 
 ```
-user1/file.txt
+dhiraj/550e8400-e29b-41d4-a716-446655440000.pdf
+```
+
+Response:
+
+```json
+{
+  "stored_as": "dhiraj/uuid.pdf",
+  "original_name": "resume.pdf"
+}
 ```
 
 ---
@@ -87,7 +98,9 @@ user1/file.txt
 
 ```json
 {
-  "files": ["test.txt", "user1/file.txt"]
+  "files": [
+    "dhiraj/uuid.pdf"
+  ]
 }
 ```
 
@@ -100,7 +113,7 @@ user1/file.txt
 Example:
 
 ```
-/download/user1/file.txt
+/download/dhiraj/uuid.pdf
 ```
 
 Returns a **presigned URL**.
@@ -114,7 +127,7 @@ Returns a **presigned URL**.
 Example:
 
 ```
-/delete/user1/file.txt
+/delete/dhiraj/uuid.pdf
 ```
 
 ---
@@ -129,7 +142,7 @@ FastAPI
 MinIO (S3-compatible)
    │
    ▼
-Bucket → Objects
+Bucket → Objects (UUID-based keys)
 ```
 
 ---
@@ -139,6 +152,8 @@ Bucket → Objects
 * S3-compatible APIs
 * Buckets & Objects
 * Object key (folder simulation)
+* UUID-based storage pattern
+* Metadata handling
 * Upload / download / delete flow
 * Presigned URLs
 * SDK interaction (boto3)
@@ -171,16 +186,10 @@ docker compose up --build
 
 * You can upload **any file type**
 * No real folders in S3 — only object keys (prefix-based)
+* File names are replaced with UUIDs to avoid conflicts
+* Original filename is stored as metadata
 * Works exactly like AWS S3 (locally)
 
----
-
-## 🚀 Next Steps
-
-* Presigned upload URLs
-* Multipart upload (large files)
-* Authentication (JWT)
-* Metadata handling
 
 ---
 
