@@ -31,6 +31,18 @@ async def upload(file: UploadFile=File(...),folder:str=""):
 
     return {"file":key}
 
+# Presigned Upload URL
+@app.get("/upload-url")
+def get_upload_url(filename:str,folder:str=""):
+    key= f"{folder}/{filename}" if folder else filename
+
+    url = s3.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={"Bucket":BUCKET,"Key":key},
+        ExpiresIn=3000,
+    )
+    return {"upload_url":url,"key":key}
+
 # List files 
 @app.get("/files")
 def files():
