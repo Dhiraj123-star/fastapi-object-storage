@@ -8,6 +8,15 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: password
     command: server /data --console-address ":9001"
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: filesdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
   
   api:
     image: python:3.11-slim
@@ -20,6 +29,7 @@ services:
       - "8000:8000"
     depends_on:
       - minio
+      - postgres
     command: >
       bash -c "
       pip install -r /requirements.txt &&
