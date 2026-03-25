@@ -1,19 +1,24 @@
-from fastapi import FastAPI, UploadFile,File
-import boto3
+from fastapi import FastAPI, UploadFile,File,Depends
 import uuid
 import os
 
+from db import SessionLocal, engine
+from models import Base, FileMetadata
+from storage import s3, BUCKET,create_bucket
 
 app =FastAPI()
 
-# S3 client(MinIO)
-s3 = boto3.client(
-    "s3",
-    endpoint_url="http://minio:9000",
-    aws_access_key_id="admin",
-    aws_secret_access_key="password",
-)
-BUCKET="videos"
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# DB dependency
+def get_db():
+    db= SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 @app.on_event("startup")
 def startup():
@@ -25,31 +30,38 @@ def startup():
 
 # Upload with optional folder support
 @app.post("/upload")
-async def upload(file: UploadFile=File(...),user:str="default"):
+async def upload(file: UploadFile=File(...),user:str="default",db=Depends(get_db)):
 
     # extract extension
     ext = os.path.splitext(file.filename)[1]
-
+    file_id=str(uuid.uuid4())
     # generate uuid filename
-    unique_name = f"{uuid.uuid4()}{ext}"
+    unique_name = f"{file_id}{ext}"
 
     key = f"{user}/{unique_name}"
 
+    # upload to s3
     s3.upload_fileobj(
         file.file,
         BUCKET,
-        key,
-        ExtraArgs={
-            "Metadata":{
-                "original_filename":file.filename
-            }
-        }
+        key
     )
-    return {
-        "stored_as":key,
-        "original_name":file.filename
-    }
+    # Save metadata in DB
+    file_meta = FileMetadata(
+        id= file_id,
+        user=user,
+        original_name = file.filename,
+        s3_key = key,
+    )
 
+    db.add(file_meta)
+    db.commit()
+
+    return {
+        "id": file_id,
+        "stored_as":key,
+        "original_name": file.filename
+    }
 
 # Presigned Upload URL
 @app.get("/upload-url")
@@ -63,27 +75,47 @@ def get_upload_url(filename:str,folder:str=""):
     )
     return {"upload_url":url,"key":key}
 
-# List files 
+# List files from DB
 @app.get("/files")
-def files():
-    objects= s3.list_objects_v2(Bucket=BUCKET)
-    if "Contents" not in objects:
-        return {"files":[]}
+def list_files(db=Depends(get_db)):
+    files = db.query(FileMetadata).all()
     
-    return {"files":[obj["Key"]for obj in objects["Contents"]]}
+    return [
+        {
+            "id":f.id,
+            "user":f.user,
+            "original_name":f.s3_key,
+            "uploaded_at":f.uploaded_at
+        }
+        for f in files
+    ]
+    
 
 # Download 
-@app.get("/download/{filename:path}")
-def download(filename: str):
-    url= s3.generate_presigned_url(
+@app.get("/download/{file_id}")
+def download(file_id: str,db=Depends(get_db)):
+
+    file = db.query(FileMetadata).filter(FileMetadata.id==file_id).first()
+
+    if not file:
+        return {"error":"File not found"}
+    url = s3.generate_presigned_url (
         "get_object",
-        Params= {"Bucket":BUCKET,"Key":filename},
-        ExpiresIn=3600,
+        Params= {"Bucket":BUCKET,"Key":file.s3_key},
+        ExpiresIn=3000,
     )
     return {"url":url}
 
 # Delete 
-@app.delete("/delete/{filename:path}")
-def delete_file(filename:str):
-    s3.delete_object(Bucket=BUCKET,Key=filename)
-    return {"message":f"{filename} deleted"}
+@app.delete("/delete/{file_id}")
+def delete_file(file_id:str,db=Depends(get_db)):
+    file = db.query(FileMetadata).filter(FileMetadata.id==file_id).first()
+
+    if not file:
+        return {"error":"File not found"}
+
+    s3.delete_object(Bucket=BUCKET,Key=file.s3_key)
+
+    db.delete(file)
+    db.commit()
+    return {"message":"deleted"}
