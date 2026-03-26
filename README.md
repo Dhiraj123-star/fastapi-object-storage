@@ -1,12 +1,14 @@
 # 📦 FastAPI + MinIO Object Storage (Simple Project)
 
-A minimal project to learn **object storage basics** using:
+A minimal project to learn **object storage + metadata management** using:
 
 * FastAPI (API layer)
 * MinIO (S3-compatible storage)
+* PostgreSQL (metadata storage)
 * boto3 (AWS SDK)
+* SQLAlchemy (ORM)
 
-This setup simulates how **Amazon S3** works locally.
+This setup simulates how **Amazon S3 + DB-backed metadata systems** work in real-world applications.
 
 ---
 
@@ -15,8 +17,9 @@ This setup simulates how **Amazon S3** works locally.
 * Upload any file (`.txt`, `.json`, `.jpg`, etc.)
 * UUID-based file storage (no name conflicts)
 * User-based folder structure (prefix)
-* Store original filename as metadata
+* Store original filename as metadata (PostgreSQL)
 * List uploaded files
+* Get file metadata by ID
 * Download files using presigned URL
 * Delete files
 * Automatic bucket creation
@@ -32,7 +35,10 @@ fastapi-object-storage/
 ├── requirements.txt
 │
 └── app/
-    └── main.py
+    ├── main.py
+    ├── db.py
+    ├── models.py
+    └── storage.py
 ```
 
 ---
@@ -52,7 +58,9 @@ docker compose up
 * FastAPI Docs → [http://localhost:8000/docs](http://localhost:8000/docs)
 * MinIO Console → [http://localhost:9001](http://localhost:9001)
 
-### 🔐 MinIO Login
+---
+
+## 🔐 MinIO Login
 
 ```
 Username: admin
@@ -85,6 +93,7 @@ Response:
 
 ```json
 {
+  "file_id": "uuid",
   "stored_as": "dhiraj/uuid.pdf",
   "original_name": "resume.pdf"
 }
@@ -106,7 +115,31 @@ Response:
 
 ---
 
-### 3. Download File
+### 3. Get File Metadata
+
+**GET** `/file/{file_id}`
+
+Example:
+
+```
+/file/uuid
+```
+
+Response:
+
+```json
+{
+  "id": "uuid",
+  "user": "dhiraj",
+  "original_name": "resume.pdf",
+  "s3_key": "dhiraj/uuid.pdf",
+  "uploaded_at": "timestamp"
+}
+```
+
+---
+
+### 4. Download File
 
 **GET** `/download/{filename}`
 
@@ -120,7 +153,7 @@ Returns a **presigned URL**.
 
 ---
 
-### 4. Delete File
+### 5. Delete File
 
 **DELETE** `/delete/{filename}`
 
@@ -137,7 +170,9 @@ Example:
 ```
 FastAPI
    │
-   │ boto3 (S3 SDK)
+   ├── PostgreSQL (metadata)
+   │
+   ├── boto3 (S3 SDK)
    ▼
 MinIO (S3-compatible)
    │
@@ -153,10 +188,11 @@ Bucket → Objects (UUID-based keys)
 * Buckets & Objects
 * Object key (folder simulation)
 * UUID-based storage pattern
-* Metadata handling
+* Metadata persistence using PostgreSQL
 * Upload / download / delete flow
 * Presigned URLs
 * SDK interaction (boto3)
+* Clean architecture (separation of concerns)
 
 ---
 
@@ -187,12 +223,19 @@ docker compose up --build
 * You can upload **any file type**
 * No real folders in S3 — only object keys (prefix-based)
 * File names are replaced with UUIDs to avoid conflicts
-* Original filename is stored as metadata
+* Metadata is stored in PostgreSQL
 * Works exactly like AWS S3 (locally)
 
+---
+
+## 🚀 Next Steps
+
+* Authentication (JWT)
+* File access control (RBAC)
 
 ---
 
-This is a **beginner-friendly foundation** to understand how real-world storage systems like S3 work.
+This is a **beginner-friendly foundation** to understand how real-world storage systems like S3 + metadata DB work.
 
 ---
+
