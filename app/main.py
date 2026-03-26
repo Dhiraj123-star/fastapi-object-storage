@@ -6,7 +6,11 @@ from db import SessionLocal, engine
 from models import Base, FileMetadata
 from storage import s3, BUCKET,create_bucket
 
-app =FastAPI()
+app =FastAPI(
+    title= "FastAPI Object Storage API",
+    description= "S3-compatible object storage service using MinIO with PostgreSQL metadata management.",
+    version="1.0.0"
+)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -119,3 +123,18 @@ def delete_file(file_id:str,db=Depends(get_db)):
     db.delete(file)
     db.commit()
     return {"message":"deleted"}
+
+@app.get("/file/{file_id}")
+def get_file(file_id:str,db=Depends(get_db)):
+    file = db.query(FileMetadata).filter(FileMetadata.id==file_id).first()
+
+    if not file:
+        return {"error":"File not found"}
+    
+    return {
+        "id":file.id,
+        "user": file.user,
+        "original_name":file.original_name,
+        "s3_key":file.s3_key,
+        "uploaded_at":file.uploaded_at,
+    }
