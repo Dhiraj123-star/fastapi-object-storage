@@ -1,27 +1,27 @@
-# 📦 FastAPI + MinIO Object Storage (Simple Project)
+# 📦 FastAPI + MinIO Object Storage (JWT Secured)
 
-A minimal project to learn **object storage + metadata management** using:
+A minimal project to learn **object storage + metadata management** with **secure authentication** using:
 
 * FastAPI (API layer)
 * MinIO (S3-compatible storage)
 * PostgreSQL (metadata storage)
 * boto3 (AWS SDK)
 * SQLAlchemy (ORM)
-
-This setup simulates how **Amazon S3 + DB-backed metadata systems** work in real-world applications.
+* JWT Authentication (secure APIs)
 
 ---
 
 ## 🚀 Features
 
+* 🔐 JWT Authentication (login + protected APIs)
 * Upload any file (`.txt`, `.json`, `.jpg`, etc.)
 * UUID-based file storage (no name conflicts)
 * User-based folder structure (prefix)
 * Store original filename as metadata (PostgreSQL)
-* List uploaded files
-* Get file metadata by ID
-* Download files using presigned URL
-* Delete files
+* List uploaded files (auth required)
+* Get file metadata by ID (auth required)
+* Download files using presigned URL (auth required)
+* Delete files (auth required)
 * Automatic bucket creation
 
 ---
@@ -35,10 +35,11 @@ fastapi-object-storage/
 ├── requirements.txt
 │
 └── app/
-    ├── main.py
-    ├── db.py
-    ├── models.py
-    └── storage.py
+    ├── main.py        # API routes + auth integration
+    ├── db.py          # DB connection
+    ├── models.py      # ORM models
+    ├── storage.py     # MinIO (S3) logic
+    └── auth.py        # JWT + password hashing
 ```
 
 ---
@@ -48,7 +49,7 @@ fastapi-object-storage/
 ### 1. Start services
 
 ```bash
-docker compose up
+docker compose up --build
 ```
 
 ---
@@ -69,13 +70,52 @@ Password: password
 
 ---
 
+## 🔑 Authentication Flow
+
+### 1. Login
+
+**POST** `/login`
+
+Example:
+
+```
+/login?username=dhiraj&password=pass
+```
+
+Response:
+
+```json
+{
+  "access_token": "your_jwt_token"
+}
+```
+
+---
+
+### 2. Authorize in Swagger
+
+1. Open `/docs`
+2. Click **Authorize 🔐**
+3. Paste:
+
+```
+your_jwt_token
+```
+
+Now all protected APIs will work.
+
+---
+
 ## 🧪 API Endpoints
 
-### 1. Upload File
+---
+
+### 1. Upload File 🔐
 
 **POST** `/upload`
 
-* Optional: `user` parameter (default: `default`)
+* Requires JWT
+* Optional: `user` parameter
 
 Example:
 
@@ -83,107 +123,62 @@ Example:
 /upload?user=dhiraj
 ```
 
-👉 If you upload `resume.pdf`, it will be stored as:
+Stored as:
 
 ```
-dhiraj/550e8400-e29b-41d4-a716-446655440000.pdf
-```
-
-Response:
-
-```json
-{
-  "file_id": "uuid",
-  "stored_as": "dhiraj/uuid.pdf",
-  "original_name": "resume.pdf"
-}
+dhiraj/<uuid>.pdf
 ```
 
 ---
 
-### 2. List Files
+### 2. List Files 🔐
 
 **GET** `/files`
 
-```json
-{
-  "files": [
-    "dhiraj/uuid.pdf"
-  ]
-}
-```
-
 ---
 
-### 3. Get File Metadata
+### 3. Get File Metadata 🔐
 
 **GET** `/file/{file_id}`
 
-Example:
-
-```
-/file/uuid
-```
-
-Response:
-
-```json
-{
-  "id": "uuid",
-  "user": "dhiraj",
-  "original_name": "resume.pdf",
-  "s3_key": "dhiraj/uuid.pdf",
-  "uploaded_at": "timestamp"
-}
-```
-
 ---
 
-### 4. Download File
+### 4. Download File 🔐
 
 **GET** `/download/{filename}`
 
-Example:
-
-```
-/download/dhiraj/uuid.pdf
-```
-
-Returns a **presigned URL**.
+Returns a **presigned URL**
 
 ---
 
-### 5. Delete File
+### 5. Delete File 🔐
 
 **DELETE** `/delete/{filename}`
-
-Example:
-
-```
-/delete/dhiraj/uuid.pdf
-```
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-FastAPI
-   │
-   ├── PostgreSQL (metadata)
-   │
-   ├── boto3 (S3 SDK)
-   ▼
-MinIO (S3-compatible)
-   │
-   ▼
-Bucket → Objects (UUID-based keys)
+        FastAPI
+           │
+           ├── JWT Auth Layer
+           │
+           ├── PostgreSQL (metadata)
+           │
+           ├── boto3 (S3 SDK)
+           ▼
+        MinIO (S3-compatible)
+           │
+           ▼
+        Bucket → Objects (UUID keys)
 ```
 
 ---
 
 ## 🧠 What You Learn
 
+* JWT Authentication (login + protected APIs)
 * S3-compatible APIs
 * Buckets & Objects
 * Object key (folder simulation)
@@ -192,6 +187,7 @@ Bucket → Objects (UUID-based keys)
 * Upload / download / delete flow
 * Presigned URLs
 * SDK interaction (boto3)
+* Secure API design (Bearer Token)
 * Clean architecture (separation of concerns)
 
 ---
@@ -220,22 +216,11 @@ docker compose up --build
 
 ## 🎯 Notes
 
+* All APIs (except `/login`) are protected using JWT
 * You can upload **any file type**
-* No real folders in S3 — only object keys (prefix-based)
-* File names are replaced with UUIDs to avoid conflicts
+* No real folders in S3 — only object keys
+* File names are replaced with UUIDs
 * Metadata is stored in PostgreSQL
-* Works exactly like AWS S3 (locally)
+* Works like AWS S3 (locally with MinIO)
 
 ---
-
-## 🚀 Next Steps
-
-* Authentication (JWT)
-* File access control (RBAC)
-
----
-
-This is a **beginner-friendly foundation** to understand how real-world storage systems like S3 + metadata DB work.
-
----
-
