@@ -26,5 +26,5 @@ jobs:
       # 4. Push Docker image
       - name: Push Docker Image
         run: |
-          docker push dhirah918106/fastapi-object-storage:latest
+          docker push dhiraj918106/fastapi-object-storage:latest
 
