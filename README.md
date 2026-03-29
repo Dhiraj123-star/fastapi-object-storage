@@ -1,6 +1,6 @@
-# 📦 FastAPI + MinIO Object Storage (JWT Secured)
+# 📦 FastAPI + MinIO Object Storage (JWT Secured + CI/CD)
 
-A minimal project to learn **object storage + metadata management** with **secure authentication** using:
+A minimal yet practical project to learn **object storage + metadata management** with **secure authentication and CI/CD** using:
 
 * FastAPI (API layer)
 * MinIO (S3-compatible storage)
@@ -8,21 +8,23 @@ A minimal project to learn **object storage + metadata management** with **secur
 * boto3 (AWS SDK)
 * SQLAlchemy (ORM)
 * JWT Authentication (secure APIs)
+* GitHub Actions (CI/CD pipeline)
 
 ---
 
 ## 🚀 Features
 
 * 🔐 JWT Authentication (login + protected APIs)
-* Upload any file (`.txt`, `.json`, `.jpg`, etc.)
-* UUID-based file storage (no name conflicts)
-* User-based folder structure (prefix)
-* Store original filename as metadata (PostgreSQL)
-* List uploaded files (auth required)
-* Get file metadata by ID (auth required)
-* Download files using presigned URL (auth required)
-* Delete files (auth required)
-* Automatic bucket creation
+* 📦 Upload any file (`.txt`, `.json`, `.jpg`, etc.)
+* 🆔 UUID-based file storage (no name conflicts)
+* 📁 User-based folder structure (prefix)
+* 🗄️ Store original filename as metadata (PostgreSQL)
+* 📄 List uploaded files (auth required)
+* 🔍 Get file metadata by ID (auth required)
+* ⬇️ Download files using presigned URL (auth required)
+* ❌ Delete files (auth required)
+* ⚙️ Automatic bucket creation
+* 🚀 CI/CD with GitHub Actions (Docker build & push)
 
 ---
 
@@ -32,14 +34,18 @@ A minimal project to learn **object storage + metadata management** with **secur
 fastapi-object-storage/
 │
 ├── docker-compose.yml
+├── Dockerfile
 ├── requirements.txt
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml
 │
 └── app/
-    ├── main.py        # API routes + auth integration
+    ├── main.py        # API routes + auth
     ├── db.py          # DB connection
     ├── models.py      # ORM models
-    ├── storage.py     # MinIO (S3) logic
-    └── auth.py        # JWT + password hashing
+    ├── storage.py     # MinIO logic
+    └── auth.py        # JWT + hashing
 ```
 
 ---
@@ -96,28 +102,19 @@ Response:
 
 1. Open `/docs`
 2. Click **Authorize 🔐**
-3. Paste:
+3. Paste token:
 
 ```
 your_jwt_token
 ```
 
-Now all protected APIs will work.
-
 ---
 
 ## 🧪 API Endpoints
 
----
-
 ### 1. Upload File 🔐
 
 **POST** `/upload`
-
-* Requires JWT
-* Optional: `user` parameter
-
-Example:
 
 ```
 /upload?user=dhiraj
@@ -147,7 +144,7 @@ dhiraj/<uuid>.pdf
 
 **GET** `/download/{filename}`
 
-Returns a **presigned URL**
+👉 Returns a **presigned URL**
 
 ---
 
@@ -178,17 +175,15 @@ Returns a **presigned URL**
 
 ## 🧠 What You Learn
 
-* JWT Authentication (login + protected APIs)
-* S3-compatible APIs
-* Buckets & Objects
-* Object key (folder simulation)
-* UUID-based storage pattern
-* Metadata persistence using PostgreSQL
-* Upload / download / delete flow
-* Presigned URLs
+* JWT Authentication (secure APIs)
+* S3-compatible object storage
+* UUID-based file handling
+* Metadata persistence (PostgreSQL)
+* Presigned URL workflow
 * SDK interaction (boto3)
-* Secure API design (Bearer Token)
-* Clean architecture (separation of concerns)
+* Clean architecture design
+* Docker & containerization
+* CI/CD with GitHub Actions
 
 ---
 
@@ -214,13 +209,25 @@ docker compose up --build
 
 ---
 
+## 🔄 CI/CD Pipeline
+
+* Triggered on push to `main`
+* Builds Docker image
+* Pushes to DockerHub:
+
+```
+dhiraj918106/fastapi-object-storage:latest
+```
+
+---
+
 ## 🎯 Notes
 
-* All APIs (except `/login`) are protected using JWT
-* You can upload **any file type**
-* No real folders in S3 — only object keys
-* File names are replaced with UUIDs
-* Metadata is stored in PostgreSQL
-* Works like AWS S3 (locally with MinIO)
+* All APIs (except `/login`) require JWT
+* Supports **any file type**
+* S3 uses **object keys (no real folders)**
+* UUID prevents filename conflicts
+* Metadata stored in PostgreSQL
+* Works like AWS S3 (via MinIO locally)
 
 ---
